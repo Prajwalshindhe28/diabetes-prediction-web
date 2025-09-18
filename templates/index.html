@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Prediction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .accuracy-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .accuracy-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .accuracy-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .result.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .result.warning {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #333;
+        }
+
+        .result.error {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+        }
+
+        .result h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .probability-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .probability-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🩺 Diabetes Prediction System</h1>
+            <p>AI-powered health assessment tool</p>
+            
+            <div class="accuracy-card">
+                <h3>Model Accuracy</h3>
+                <div class="accuracy-value" id="accuracy">Loading...</div>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <form id="predictionForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" min="0" max="120" step="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bmi">BMI (Body Mass Index)</label>
+                        <input type="number" id="bmi" name="bmi" min="10" max="60" step="0.1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="HbA1c_level">HbA1c Level (%)</label>
+                        <input type="number" id="HbA1c_level" name="HbA1c_level" min="3" max="15" step="0.1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blood_glucose_level">Blood Glucose Level (mg/dL)</label>
+                        <input type="number" id="blood_glucose_level" name="blood_glucose_level" min="50" max="500" step="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="smoking_history">Smoking History</label>
+                        <select id="smoking_history" name="smoking_history" required>
+                            <option value="">Select Smoking History</option>
+                            <option value="never">Never</option>
+                            <option value="former">Former</option>
+                            <option value="current">Current</option>
+                            <option value="not current">Not Current</option>
+                            <option value="ever">Ever</option>
+                            <option value="No Info">No Info</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hypertension">Hypertension</label>
+                        <select id="hypertension" name="hypertension" required>
+                            <option value="">Select</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="heart_disease">Heart Disease</label>
+                        <select id="heart_disease" name="heart_disease" required>
+                            <option value="">Select</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🔮 Predict Diabetes Risk
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Analyzing your health data...</p>
+            </div>
+
+            <div class="result" id="result">
+                <h3 id="resultTitle"></h3>
+                <p id="resultMessage"></p>
+                <div class="probability-info" id="probabilityInfo">
+                    <h4>Prediction Confidence:</h4>
+                    <div class="probability-row">
+                        <span>No Diabetes:</span>
+                        <span id="noDiabetesProb"></span>
+                    </div>
+                    <div class="probability-row">
+                        <span>Diabetes:</span>
+                        <span id="diabetesProb"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load model accuracy on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/accuracy')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('accuracy').textContent = data.accuracy;
+                })
+                .catch(error => {
+                    document.getElementById('accuracy').textContent = 'N/A';
+                });
+        });
+
+        // Handle form submission
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            // Send prediction request
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔮 Predict Diabetes Risk';
+                
+                // Show result
+                const resultDiv = document.getElementById('result');
+                const resultTitle = document.getElementById('resultTitle');
+                const resultMessage = document.getElementById('resultMessage');
+                const noDiabetesProb = document.getElementById('noDiabetesProb');
+                const diabetesProb = document.getElementById('diabetesProb');
+                
+                if (data.error) {
+                    resultDiv.className = 'result error';
+                    resultTitle.textContent = 'Error';
+                    resultMessage.textContent = data.error;
+                    document.getElementById('probabilityInfo').style.display = 'none';
+                } else {
+                    if (data.prediction === 1) {
+                        resultDiv.className = 'result warning';
+                        resultTitle.textContent = '⚠️ Diabetes Risk Detected';
+                        resultMessage.textContent = 'The model predicts a risk of diabetes. Please consult with a healthcare professional for proper medical advice.';
+                    } else {
+                        resultDiv.className = 'result success';
+                        resultTitle.textContent = '✅ Low Diabetes Risk';
+                        resultMessage.textContent = 'The model predicts a low risk of diabetes. Continue maintaining a healthy lifestyle!';
+                    }
+                    
+                    // Show probabilities
+                    noDiabetesProb.textContent = data.probability.no_diabetes;
+                    diabetesProb.textContent = data.probability.diabetes;
+                    document.getElementById('probabilityInfo').style.display = 'block';
+                }
+                
+                resultDiv.style.display = 'block';
+                resultDiv.scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(error => {
+                // Hide loading
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔮 Predict Diabetes Risk';
+                
+                // Show error
+                const resultDiv = document.getElementById('result');
+                resultDiv.className = 'result error';
+                document.getElementById('resultTitle').textContent = 'Connection Error';
+                document.getElementById('resultMessage').textContent = 'Failed to connect to the prediction service. Please try again.';
+                document.getElementById('probabilityInfo').style.display = 'none';
+                resultDiv.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
