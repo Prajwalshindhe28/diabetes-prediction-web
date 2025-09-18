@@ -33,7 +33,7 @@ Git & GitHub (version control and hosting)
 
 🚀 Getting Started
 1️⃣ Clone the Repository
-git clone https://github.com/prajwalshindhe28/diabetes-prediction-app.git
+git clone https://github.com/prajwalshindhe28/diabetes-prediction-web.git
 cd diabetes-prediction-app
 
 2️⃣ Create a Virtual Environment (Recommended)
